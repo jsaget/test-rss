@@ -51,15 +51,18 @@ module.exports = {
 
     const { parameters: { start, rows }, records } = data;
 
-    const respData = records.map(o => ({
-      id: o.fields.stop_id,
-      name: o.fields.stop_name,
-      description: o.fields.stop_desc,
+    const countDuplicates = dirtyDuplicateCount(records);
+    const respData = records.map(record => ({
+      id: record.fields.stop_id,
+      numberOfDuplicates: getMaxDuplicateValue(record, countDuplicates),
+      name: record.fields.stop_name,
+      description: record.fields.stop_desc,
       coordinates: {
-        lat: o.fields.stop_lat,
-        long: o.fields.stop_lon,
+        lat: record.fields.stop_lat,
+        long: record.fields.stop_lon,
       }
     }));
+
 
     return h.response({
       limit: rows,
@@ -68,4 +71,37 @@ module.exports = {
     })
       .header('range', `${start}-${start + data.records.length}/${data.nhits}`);
   }
+}
+
+function dirtyDuplicateCount(records) {
+  const coordinates = {};
+  const descriptions = {};
+  const names = {};
+
+  records.forEach(record => {
+    const coord = `${record.fields.stop_lat}-${record.fields.stop_lon}`;
+    const name = record.fields.stop_name;
+    const description = record.fields.stop_desc;
+
+    coordinates[coord] = coordinates[coord] ? coordinates[coord] + 1 : 1;
+    descriptions[description] = descriptions[description] ? descriptions[description] + 1 : 1;
+    names[name] = names[name] ? names[name] + 1 : 1;
+
+  });
+
+  return {
+    coordinates,
+    descriptions,
+    names,
+  }
+}
+
+function getMaxDuplicateValue(record, ref) {
+  const { coordinates, descriptions, names } = ref;
+
+  return [
+    coordinates[record.fields.stop_desc],
+    descriptions[record.fields.stop_desc],
+    names[record.fields.stop_name],
+  ].reduce((max, v) => v > max ? v : max, 0);
 }
