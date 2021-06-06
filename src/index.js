@@ -36,12 +36,13 @@ const init = async () => {
   const cwd = Path.resolve(__dirname, '.');
   const routes = glob.sync('**/*.route.js', { cwd: cwd })
 
+  console.log('Loading routes:')
   routes.forEach(route => {
     var route = require(Path.resolve(cwd, route));
 
     try {
       server.route(route);
-      console.log('Route: ', route.path, '(' + route.method + ')');
+      console.log('\tRoute: ', route.path, '(' + route.method + ')');
     } catch (error) {
       throw new Error('Cannot load route ' + route.path + ':\n' + error.message);
     }
